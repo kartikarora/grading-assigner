@@ -1,6 +1,7 @@
-Forked version of the original [grading-assigner](https://github.com/udacity/grading-assigner) with support for push notifications on an [Android App](http://www.droidbin.com/p1b8e4f6trr50e371l011d4q2j93).
+Forked version of the original [grading-assigner](https://github.com/udacity/grading-assigner) with support for push notifications on an [Android App](https://github.com/kartikarora/udacity-reviewer-android/releases/latest).
 
 > The app only works if grading assigner is run with an `FCM_TOKEN` using this fork.
+> Also, the app must be run at least once before running the script to complete registration
 
 # Usage
 
