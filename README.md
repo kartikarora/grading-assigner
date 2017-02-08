@@ -1,7 +1,8 @@
 Forked version of the original [grading-assigner](https://github.com/udacity/grading-assigner) with support for push notifications on an [Android App](https://github.com/kartikarora/udacity-reviewer-android/releases/latest).
 
 > The app only works if grading assigner is run with an `FCM_TOKEN` using this fork.
-> Also, the app must be run at least once before running the script to complete registration
+
+> Also, the app must be run at least once before running the script to complete registration. The `FCM_TOKEN` is generated in the app.
 
 # Usage
 
@@ -31,8 +32,7 @@ optional arguments:
 
 # Example
 ```
-$ export UDACITY_AUTH_TOKEN=...
-$ ./grading-assigner.py --fcm-token ...
+$ ./grading-assigner.py --auth-token <YOUR_UDACITY_REVIEW_API_TOKE> --fcm-token <YOUR_FCM_TOKEN_COPIED_FROM_PHONE>
 |2016-08-03 19:28:44,766| Requesting certifications...
 |2016-08-03 19:28:45,357| Found certifications for project IDs: [2, 3] in languages [u'pt', u'en']
 |2016-08-03 19:28:45,358| Polling for new submissions...
