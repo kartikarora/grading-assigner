@@ -193,6 +193,9 @@ if __name__ == "__main__":
         logger.setLevel(logging.DEBUG)
 
     if args.fcm_token:
-        logger.info(args.fcm_token)
+        logger.info("FCM Token found, Push Initialized")
+        logger.info("Download the app : http://www.droidbin.com/p1b8e4f6trr50e371l011d4q2j93")
+    else:
+        logger.info("No FCM Token, you will not receive push notifications")
 
     request_reviews(args.token, args.fcm_token)
