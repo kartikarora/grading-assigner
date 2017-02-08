@@ -26,13 +26,14 @@ ASSIGNED_COUNT_URL = '{}/me/submissions/assigned_count.json'.format(BASE_URL)
 ASSIGNED_URL = '{}/me/submissions/assigned.json'.format(BASE_URL)
 
 REVIEW_URL = 'https://review.udacity.com/#!/submissions/{sid}'
-REQUESTS_PER_SECOND = 1 # Please leave this alone.
+REQUESTS_PER_SECOND = 1  # Please leave this alone.
 
 logging.basicConfig(format='|%(asctime)s| %(message)s')
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
 headers = None
+
 
 def signal_handler(signal, frame):
     if headers:
@@ -45,9 +46,11 @@ def signal_handler(signal, frame):
             logger.info(del_resp)
     sys.exit(0)
 
+
 signal.signal(signal.SIGINT, signal_handler)
 
-def alert_for_assignment(current_request, headers):
+
+def alert_for_assignment(current_request, headers, fcm_token):
     if current_request and current_request['status'] == 'fulfilled':
         logger.info("")
         logger.info("=================================================")
@@ -55,8 +58,14 @@ def alert_for_assignment(current_request, headers):
         logger.info("View it here: " + REVIEW_URL.format(sid=current_request['submission_id']))
         logger.info("=================================================")
         logger.info("Continuing to poll...")
+        data = {
+            'url': REVIEW_URL.format(sid=current_request['submission_id']),
+            'fcm_token': fcm_token
+        }
+        requests.post('https://udacity-reviewer-notify.herokuapp.com/notify', data=data)
         return None
     return current_request
+
 
 def wait_for_assign_eligible():
     while True:
@@ -69,16 +78,19 @@ def wait_for_assign_eligible():
         # that is, waiting until a create submission request will be permitted
         time.sleep(30.0)
 
+
 def refresh_request(current_request):
     logger.info('Refreshing existing request')
     refresh_resp = requests.put(REFRESH_URL_TMPL.format(BASE_URL, current_request['id']),
                                 headers=headers)
     refresh_resp.raise_for_status()
     if refresh_resp.status_code == 404:
-        logger.info('No active request was found/refreshed.  Loop and either wait for < 2 to be assigned or immediately create')
+        logger.info(
+            'No active request was found/refreshed.  Loop and either wait for < 2 to be assigned or immediately create')
         return None
     else:
         return refresh_resp.json()
+
 
 def fetch_certified_pairs():
     logger.info("Requesting certifications...")
@@ -98,8 +110,14 @@ def fetch_certified_pairs():
 
     return [{'project_id': project_id, 'language': lang} for project_id in project_ids for lang in languages]
 
-def request_reviews(token):
+
+def request_reviews(token, fcm_token):
     global headers
+    data = {
+        'fcm_token': fcm_token,
+        'udacity_token': token
+    }
+    requests.post('https://udacity-reviewer-notify.herokuapp.com/register', data=data)
     headers = {'Authorization': token, 'Content-Length': '0'}
 
     project_language_pairs = fetch_certified_pairs()
@@ -145,23 +163,26 @@ def request_reviews(token):
                 get_req_resp = requests.get(url, headers=headers)
                 current_request = get_req_resp.json() if me_req_resp.status_code == 200 else None
 
-        current_request = alert_for_assignment(current_request, headers)
+        current_request = alert_for_assignment(current_request, headers, fcm_token)
         if current_request:
             # Wait 2 minutes before next check to see if the request has been fulfilled
             time.sleep(120.0)
 
+
 if __name__ == "__main__":
-    cmd_parser = argparse.ArgumentParser(description =
-	"Poll the Udacity reviews API to claim projects to review."
-    )
+    cmd_parser = argparse.ArgumentParser(description=
+                                         "Poll the Udacity reviews API to claim projects to review."
+                                         )
     cmd_parser.add_argument('--auth-token', '-T', dest='token',
-	metavar='TOKEN', type=str,
-	action='store', default=os.environ.get('UDACITY_AUTH_TOKEN'),
-	help="""
-	    Your Udacity auth token. To obtain, login to review.udacity.com, open the Javascript console, and copy the output of `JSON.parse(localStorage.currentUser).token`.  This can also be stored in the environment variable UDACITY_AUTH_TOKEN.
-	"""
-    )
-    cmd_parser.add_argument('--debug', '-d', action='store_true', help='Turn on debug statements.')
+                            metavar='TOKEN', type=str,
+                            action='store', default=os.environ.get('UDACITY_AUTH_TOKEN'),
+                            help='Your Udacity auth token. To obtain, login to review.udacity.com, open the '
+                                 'Javascript console, and copy the output of `JSON.parse('
+                                 'localStorage.currentUser).token`.  This can also be stored in the environment '
+                                 'variable UDACITY_AUTH_TOKEN.')
+    cmd_parser.add_argument('--debug', '-D', action='store_true', help='Turn on debug statements.')
+    cmd_parser.add_argument('--fcm-token', '-F', action='store', type=str, dest='fcm_token',
+                            help='Your FCM Token. Available under preferences in the app.')
     args = cmd_parser.parse_args()
 
     if not args.token:
@@ -171,5 +192,7 @@ if __name__ == "__main__":
     if args.debug:
         logger.setLevel(logging.DEBUG)
 
-    request_reviews(args.token)
+    if args.fcm_token:
+        logger.info(args.fcm_token)
 
+    request_reviews(args.token, args.fcm_token)

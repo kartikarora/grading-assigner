@@ -1,4 +1,9 @@
+Forked version of the original [grading-assigner](https://github.com/udacity/grading-assigner) with support for push notifications on an [Android App](http://www.droidbin.com/p1b8e4f6trr50e371l011d4q2j93).
+
+> The app only works if grading assigner is run with an `FCM_TOKEN` using this fork.
+
 # Usage
+
 Requires the `requests` module, which you can either install globally or in a virtualenv.
 
 Install: pip install -r requirements.txt (expects Python to be installed along with pip)
@@ -18,12 +23,15 @@ optional arguments:
                         also be stored in the environment variable
                         UDACITY_AUTH_TOKEN.
   --debug, -d           Turn on debug statements.
+  --fcm-token TOKEN, -F TOKEN
+                        Your FCM Token. Available under preferences in the
+                        app.
 ```
 
 # Example
 ```
 $ export UDACITY_AUTH_TOKEN=...
-$ ./grading-assigner.py
+$ ./grading-assigner.py --fcm-token ...
 |2016-08-03 19:28:44,766| Requesting certifications...
 |2016-08-03 19:28:45,357| Found certifications for project IDs: [2, 3] in languages [u'pt', u'en']
 |2016-08-03 19:28:45,358| Polling for new submissions...
