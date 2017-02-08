@@ -194,8 +194,8 @@ if __name__ == "__main__":
 
     if args.fcm_token:
         logger.info("FCM Token found, Push Initialized")
-        logger.info("Download the app : http://www.droidbin.com/p1b8e4f6trr50e371l011d4q2j93")
     else:
         logger.info("No FCM Token, you will not receive push notifications")
+        logger.info("Download the app if you haven't: https://github.com/kartikarora/udacity-reviewer-android")
 
     request_reviews(args.token, args.fcm_token)
