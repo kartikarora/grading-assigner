@@ -44,6 +44,11 @@ def signal_handler(signal, frame):
             del_resp = requests.delete(DELETE_URL_TMPL.format(BASE_URL, me_resp.json()[0]['id']),
                                        headers=headers)
             logger.info(del_resp)
+            data = {
+                'closed': True,
+                'fcm_token': fcm_token
+            }
+            requests.post('https://udacity-reviewer-notify.herokuapp.com/notify', data=data)
     sys.exit(0)
 
 
@@ -134,7 +139,6 @@ def request_reviews(token, fcm_token):
         # Loop and wait until fewer than 2 reviews assigned, as creating
         # a request will fail
         wait_for_assign_eligible()
-
         if current_request is None:
             logger.info('Creating a request for ' + str(len(project_language_pairs)) +
                         ' possible project/language combinations')
@@ -142,6 +146,11 @@ def request_reviews(token, fcm_token):
                                         json={'projects': project_language_pairs},
                                         headers=headers)
             current_request = create_resp.json() if create_resp.status_code == 201 else None
+            data = {
+                'fcm_token': fcm_token,
+                'created': True
+            }
+            requests.post('https://udacity-reviewer-notify.herokuapp.com/notify', data=data)
         else:
             logger.info(current_request)
             closing_at = parser.parse(current_request['closed_at'])
