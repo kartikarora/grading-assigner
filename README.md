@@ -26,13 +26,15 @@ optional arguments:
                         UDACITY_AUTH_TOKEN.
   --debug, -d           Turn on debug statements.
   --fcm-token TOKEN, -F TOKEN
-                        Your FCM Token. Available under preferences in the
-                        app.
+                        Your FCM Token(s). Available under preferences in the
+                        app. Add each token after a whitespace
 ```
 
 # Example
 ```
-$ ./grading-assigner.py --auth-token <YOUR_UDACITY_REVIEW_API_TOKE> --fcm-token <YOUR_FCM_TOKEN_COPIED_FROM_PHONE>
+$ ./grading-assigner.py --auth-token <YOUR_UDACITY_REVIEW_API_TOKE> --fcm-token <YOUR_FCM_TOKEN_COPIED_FROM_PHONE_1> <YOUR_FCM_TOKEN_COPIED_FROM_PHONE_2>
+|2016-08-03 19:28:43,288| FCM Token found, Push Initialized
+|2016-08-03 19:28:43,456| Number of devices: 2
 |2016-08-03 19:28:44,766| Requesting certifications...
 |2016-08-03 19:28:45,357| Found certifications for project IDs: [2, 3] in languages [u'pt', u'en']
 |2016-08-03 19:28:45,358| Polling for new submissions...

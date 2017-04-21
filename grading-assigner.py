@@ -1,14 +1,15 @@
 #!/usr/bin/env python
-import signal
-import sys
 import argparse
 import logging
 import os
-import requests
+import signal
+import sys
 import time
-import pytz
-from dateutil import parser
 from datetime import datetime, timedelta
+
+import pytz
+import requests
+from dateutil import parser
 
 utc = pytz.UTC
 
@@ -33,6 +34,7 @@ logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
 headers = None
+fcm = []
 
 
 def signal_handler(signal, frame):
@@ -44,18 +46,19 @@ def signal_handler(signal, frame):
             del_resp = requests.delete(DELETE_URL_TMPL.format(BASE_URL, me_resp.json()[0]['id']),
                                        headers=headers)
             logger.info(del_resp)
-            data = {
-                'closed': True,
-                'fcm_token': fcm_token
-            }
-            requests.post('https://udacity-reviewer-notify.herokuapp.com/notify', data=data)
+            for token in fcm:
+                data = {
+                    'closed': True,
+                    'fcm_token': token
+                }
+                requests.post('https://udacity-reviewer-notify.herokuapp.com/notify', data=data)
     sys.exit(0)
 
 
 signal.signal(signal.SIGINT, signal_handler)
 
 
-def alert_for_assignment(current_request, headers, fcm_token):
+def alert_for_assignment(current_request, headers, fcm_tokens):
     if current_request and current_request['status'] == 'fulfilled':
         logger.info("")
         logger.info("=================================================")
@@ -63,11 +66,12 @@ def alert_for_assignment(current_request, headers, fcm_token):
         logger.info("View it here: " + REVIEW_URL.format(sid=current_request['submission_id']))
         logger.info("=================================================")
         logger.info("Continuing to poll...")
-        data = {
-            'url': REVIEW_URL.format(sid=current_request['submission_id']),
-            'fcm_token': fcm_token
-        }
-        requests.post('https://udacity-reviewer-notify.herokuapp.com/notify', data=data)
+        for fcm_token in fcm_tokens:
+            data = {
+                'url': REVIEW_URL.format(sid=current_request['submission_id']),
+                'fcm_token': fcm_token
+            }
+            requests.post('https://udacity-reviewer-notify.herokuapp.com/notify', data=data)
         return None
     return current_request
 
@@ -116,14 +120,17 @@ def fetch_certified_pairs():
     return [{'project_id': project_id, 'language': lang} for project_id in project_ids for lang in languages]
 
 
-def request_reviews(token, fcm_token):
+def request_reviews(token, fcm_tokens):
     global headers
-    data = {
-        'fcm_token': fcm_token,
-        'udacity_token': token
-    }
-    requests.post('https://udacity-reviewer-notify.herokuapp.com/register', data=data)
+    global fcm
+    fcm = fcm_tokens
     headers = {'Authorization': token, 'Content-Length': '0'}
+    for fcm_token in fcm_tokens:
+        data = {
+            'fcm_token': fcm_token,
+            'udacity_token': token
+        }
+        requests.post('https://udacity-reviewer-notify.herokuapp.com/register', data=data)
 
     project_language_pairs = fetch_certified_pairs()
     logger.info("Will poll for projects/languages %s", str(project_language_pairs))
@@ -146,11 +153,12 @@ def request_reviews(token, fcm_token):
                                         json={'projects': project_language_pairs},
                                         headers=headers)
             current_request = create_resp.json() if create_resp.status_code == 201 else None
-            data = {
-                'fcm_token': fcm_token,
-                'created': True
-            }
-            requests.post('https://udacity-reviewer-notify.herokuapp.com/notify', data=data)
+            for fcm_token in fcm_tokens:
+                data = {
+                    'fcm_token': fcm_token,
+                    'created': True
+                }
+                requests.post('https://udacity-reviewer-notify.herokuapp.com/notify', data=data)
         else:
             logger.info(current_request)
             closing_at = parser.parse(current_request['closed_at'])
@@ -190,7 +198,7 @@ if __name__ == "__main__":
                                  'localStorage.currentUser).token`.  This can also be stored in the environment '
                                  'variable UDACITY_AUTH_TOKEN.')
     cmd_parser.add_argument('--debug', '-D', action='store_true', help='Turn on debug statements.')
-    cmd_parser.add_argument('--fcm-token', '-F', action='store', type=str, dest='fcm_token',
+    cmd_parser.add_argument('--fcm-token', '-F', action='store', type=str, nargs='*', dest='fcm_token',
                             help='Your FCM Token. Available under preferences in the app.')
     args = cmd_parser.parse_args()
 
@@ -201,8 +209,9 @@ if __name__ == "__main__":
     if args.debug:
         logger.setLevel(logging.DEBUG)
 
-    if args.fcm_token:
+    if args.fcm_token and len(args.fcm_token) > 0:
         logger.info("FCM Token found, Push Initialized")
+        logger.info("Number of devices: " + str(len(args.fcm_token)))
     else:
         logger.info("No FCM Token, you will not receive push notifications")
         logger.info("Download the app if you haven't: https://github.com/kartikarora/udacity-reviewer-android")
